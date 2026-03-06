@@ -2,126 +2,97 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Watchman's Quest</title>
-
 <style>
-
-body{
-margin:0;
-background:#0b0f1a;
-color:white;
-font-family:Arial;
-text-align:center;
+body {
+  margin: 0;
+  background: #0b0f1a;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  color: white;
 }
-
-h1{
-margin-top:10px;
+h1 {
+  margin-top: 10px;
 }
-
-canvas{
-background:#111;
-border:3px solid #3fa9ff;
-margin-top:10px;
+canvas {
+  background: #111;
+  border: 3px solid #3fa9ff;
+  margin-top: 10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
-
 </style>
-
 </head>
-
 <body>
-
 <h1>The Watchman's Quest</h1>
-<p>Collect the Light Orbs. Avoid the Darkness.</p>
-
+<p>Collect the Light Orbs. Use Arrow Keys to move.</p>
 <canvas id="game" width="600" height="400"></canvas>
 
 <script>
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player = {
-x:50,
-y:200,
-size:20,
-speed:4
-};
-
-let orb = {
-x:500,
-y:200,
-size:10
-};
-
+let player = { x:50, y:200, size:20, speed:4 };
+let orb = { x:500, y:200, size:10 };
 let score = 0;
-
 let keys = {};
 
-document.addEventListener("keydown",(e)=>{
-keys[e.key]=true;
-});
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-document.addEventListener("keyup",(e)=>{
-keys[e.key]=false;
-});
+function movePlayer() {
+  if(keys["ArrowUp"]) player.y -= player.speed;
+  if(keys["ArrowDown"]) player.y += player.speed;
+  if(keys["ArrowLeft"]) player.x -= player.speed;
+  if(keys["ArrowRight"]) player.x += player.speed;
 
-function movePlayer(){
-
-if(keys["ArrowUp"]) player.y -= player.speed;
-if(keys["ArrowDown"]) player.y += player.speed;
-if(keys["ArrowLeft"]) player.x -= player.speed;
-if(keys["ArrowRight"]) player.x += player.speed;
-
+  // Keep player inside canvas
+  if(player.x < 0) player.x = 0;
+  if(player.y < 0) player.y = 0;
+  if(player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+  if(player.y + player.size > canvas.height) player.y = canvas.height - player.size;
 }
 
-function collision(){
-
-let dx = player.x - orb.x;
-let dy = player.y - orb.y;
-let distance = Math.sqrt(dx*dx + dy*dy);
-
-if(distance < player.size + orb.size){
-
-score++;
-
-orb.x = Math.random()*560+20;
-orb.y = Math.random()*360+20;
-
+function collision() {
+  let dx = player.x + player.size/2 - orb.x;
+  let dy = player.y + player.size/2 - orb.y;
+  let distance = Math.sqrt(dx*dx + dy*dy);
+  if(distance < player.size/2 + orb.size) {
+    score++;
+    orb.x = Math.random() * (canvas.width - 20) + 10;
+    orb.y = Math.random() * (canvas.height - 20) + 10;
+  }
 }
 
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Draw orb
+  ctx.fillStyle = "gold";
+  ctx.beginPath();
+  ctx.arc(orb.x, orb.y, orb.size, 0, Math.PI*2);
+  ctx.fill();
+
+  // Draw player
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  // Draw score
+  ctx.fillStyle = "white";
+  ctx.font = "20px Arial";
+  ctx.fillText("Score: "+score, 10, 25);
 }
 
-function draw(){
-
-ctx.clearRect(0,0,600,400);
-
-ctx.fillStyle="gold";
-ctx.beginPath();
-ctx.arc(orb.x,orb.y,orb.size,0,Math.PI*2);
-ctx.fill();
-
-ctx.fillStyle="cyan";
-ctx.fillRect(player.x,player.y,player.size,player.size);
-
-ctx.fillStyle="white";
-ctx.font="20px Arial";
-ctx.fillText("Score: "+score,10,25);
-
-}
-
-function gameLoop(){
-
-movePlayer();
-collision();
-draw();
-
-requestAnimationFrame(gameLoop);
-
+function gameLoop() {
+  movePlayer();
+  collision();
+  draw();
+  requestAnimationFrame(gameLoop);
 }
 
 gameLoop();
-
 </script>
-
 </body>
 </html>
