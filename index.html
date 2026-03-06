@@ -3,42 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixar-Style Racer</title>
+    <title>Pixar Grand Tour</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: 'Arial', sans-serif; }
         #ui {
-            position: absolute;
-            top: 20px; width: 100%;
-            text-align: center;
-            color: white;
-            pointer-events: none;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            position: absolute; top: 20px; width: 100%;
+            text-align: center; color: white; pointer-events: none;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .speed-meter { font-size: 2rem; font-weight: bold; }
+        #hud {
+            position: absolute; bottom: 20px; left: 20px;
+            color: white; background: rgba(0,0,0,0.4);
+            padding: 15px; border-radius: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <h1>PIXAR RACER</h1>
-        <div class="speed-meter">Press A / D to Steer</div>
+        <h1 id="zone-text">STARTING LINE</h1>
+        <p>Use ARROW KEYS to drive!</p>
+    </div>
+
+    <div id="hud">
+        Distance: <span id="dist">0</span>m<br>
+        Speed: <span id="speed">0</span> km/h
     </div>
 
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
 
-        // --- 1. SETUP ---
+        // --- 1. CORE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Bright Sky
-        scene.fog = new THREE.Fog(0x87ceeb, 10, 50); // Fog makes it look "endless"
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 20, 100);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -46,112 +48,125 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // --- 2. LIGHTING (The Pixar Glow) ---
-        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambient);
+        // --- 2. LIGHTING ---
+        const light = new THREE.DirectionalLight(0xffffff, 1.5);
+        light.position.set(10, 20, 10);
+        light.castShadow = true;
+        scene.add(light, new THREE.AmbientLight(0xffffff, 0.6));
 
-        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-        sun.position.set(5, 10, 5);
-        sun.castShadow = true;
-        scene.add(sun);
+        // --- 3. CAR FACTORY ---
+        function createCar(color, zPos, xPos) {
+            const group = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.5, 2), new THREE.MeshStandardMaterial({ color, roughness: 0.1 }));
+            body.castShadow = true;
+            body.position.y = 0.5;
+            group.add(body);
+            
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.4, 0.8), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+            cabin.position.set(0, 0.8, -0.1);
+            group.add(cabin);
 
-        // --- 3. THE CAR (Built with "Digital Plastic") ---
-        const car = new THREE.Group();
+            group.position.set(xPos, 0, zPos);
+            scene.add(group);
+            return group;
+        }
 
-        // Car Body
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.2 });
-        const body = new THREE.Mesh(new THREE.BoxGeometry(1, 0.5, 2), bodyMat);
-        body.castShadow = true;
-        car.add(body);
-
-        // Car Cabin
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 1), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        cabin.position.set(0, 0.45, -0.2);
-        car.add(cabin);
-
-        // Wheels
-        const wheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 32);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-        const wheels = [];
-
-        const wheelPositions = [
-            [-0.6, -0.2, 0.6], [0.6, -0.2, 0.6], 
-            [-0.6, -0.2, -0.6], [0.6, -0.2, -0.6]
+        const playerCar = createCar(0xff4444, 0, 0); // Red Player
+        const rivals = [
+            { mesh: createCar(0x4444ff, -10, -2), speed: 0.25 }, // Blue Rival
+            { mesh: createCar(0xffff44, -15, 2), speed: 0.3 }    // Yellow Rival
         ];
 
-        wheelPositions.forEach(pos => {
-            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-            wheel.rotation.z = Math.PI / 2;
-            wheel.position.set(...pos);
-            car.add(wheel);
-            wheels.push(wheel);
-        });
+        // --- 4. WORLD BUILDING (The Long Track) ---
+        const trackLength = 1000;
+        const groundGeo = new THREE.PlaneGeometry(20, trackLength);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.z = -trackLength/2 + 5;
+        ground.receiveShadow = true;
+        scene.add(ground);
 
-        car.position.y = 0.5;
-        scene.add(car);
+        // Decorations (Trees/Buildings)
+        for(let i = 0; i < 50; i++) {
+            const side = Math.random() > 0.5 ? 6 : -6;
+            const dist = -Math.random() * trackLength;
+            
+            // Canyon (Orange Blocks) or City (Grey Towers)
+            const h = Math.random() * 5 + 2;
+            const decor = new THREE.Mesh(
+                new THREE.BoxGeometry(2, h, 2),
+                new THREE.MeshStandardMaterial({ color: dist < -600 ? 0x777777 : 0xe67e22 })
+            );
+            decor.position.set(side + (Math.random()*5), h/2, dist);
+            scene.add(decor);
+        }
 
-        // --- 4. THE ROAD ---
-        const roadGroup = new THREE.Group();
-        const roadGeo = new THREE.PlaneGeometry(10, 100);
-        const roadMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-        const road = new THREE.Mesh(roadGeo, roadMat);
-        road.rotation.x = -Math.PI / 2;
-        road.receiveShadow = true;
-        roadGroup.add(road);
+        // Finish Line
+        const finish = new THREE.Mesh(new THREE.PlaneGeometry(20, 2), new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+        finish.rotation.x = -Math.PI / 2;
+        finish.position.set(0, 0.05, -trackLength + 10);
+        scene.add(finish);
 
-        // Grass
-        const grassGeo = new THREE.PlaneGeometry(100, 100);
-        const grassMat = new THREE.MeshStandardMaterial({ color: 0x55aa44 });
-        const grass = new THREE.Mesh(grassGeo, grassMat);
-        grass.rotation.x = -Math.PI / 2;
-        grass.position.y = -0.1;
-        roadGroup.add(grass);
+        // --- 5. CONTROLS ---
+        const keys = {};
+        window.onkeydown = (e) => keys[e.code] = true;
+        window.onkeyup = (e) => keys[e.code] = false;
 
-        scene.add(roadGroup);
+        let velocity = 0;
+        let playerX = 0;
 
-        // --- 5. CONTROLS & LOGIC ---
-        const keys = { a: false, d: false };
-        window.onkeydown = (e) => keys[e.key.toLowerCase()] = true;
-        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
-
-        let speed = 0.4;
-        let carX = 0;
-
+        // --- 6. GAME LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move road to simulate speed
-            road.position.z += speed;
-            if (road.position.z > 20) road.position.z = 0;
+            // Forward/Back movement
+            if (keys['ArrowUp']) velocity += 0.01;
+            if (keys['ArrowDown']) velocity -= 0.01;
+            velocity *= 0.95; // Friction
 
-            // Steering
-            if (keys.a && carX > -4) {
-                carX -= 0.1;
-                car.rotation.z = 0.1; // Lean into turn
-            } else if (keys.d && carX < 4) {
-                carX += 0.1;
-                car.rotation.z = -0.1;
-            } else {
-                car.rotation.z = 0; // Straighten up
-            }
-            car.position.x = carX;
+            // Left/Right steering
+            if (keys['ArrowLeft'] && playerX > -4) playerX -= 0.1;
+            if (keys['ArrowRight'] && playerX < 4) playerX += 0.1;
 
-            // Rotate wheels
-            wheels.forEach(w => w.rotation.x += 0.2);
+            playerCar.position.z -= velocity;
+            playerCar.position.x = playerX;
+            playerCar.rotation.y = (keys['ArrowLeft'] ? 0.2 : keys['ArrowRight'] ? -0.2 : 0);
 
-            // Bouncy "Pixar" Suspension
-            car.position.y = 0.5 + Math.sin(Date.now() * 0.01) * 0.02;
+            // Move Rivals
+            rivals.forEach(r => {
+                r.mesh.position.z -= r.speed;
+            });
 
             // Camera follow
-            camera.position.set(carX * 0.5, 3, 6);
-            camera.lookAt(carX, 0, -2);
+            camera.position.set(playerCar.position.x, playerCar.position.y + 3, playerCar.position.z + 7);
+            camera.lookAt(playerCar.position.x, 0, playerCar.position.z - 5);
+
+            // Update UI
+            const distTraveled = Math.floor(Math.abs(playerCar.position.z));
+            document.getElementById('dist').innerText = distTraveled;
+            document.getElementById('speed').innerText = Math.floor(velocity * 200);
+
+            // Zone Transitions
+            const zoneText = document.getElementById('zone-text');
+            if (distTraveled > 800) {
+                zoneText.innerText = "CITY CENTER";
+                scene.background.set(0x334455);
+            } else if (distTraveled > 400) {
+                zoneText.innerText = "DUSTY CANYON";
+                scene.background.set(0xffccaa);
+            }
+
+            if (playerCar.position.z < -trackLength + 10) {
+                zoneText.innerText = "FINISH LINE! YOU WIN!";
+                velocity = 0;
+            }
 
             renderer.render(scene, camera);
         }
 
         animate();
 
-        // Resize Fix
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
