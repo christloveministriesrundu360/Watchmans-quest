@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Watchman’s Quest Ludo</title>
+<title>The Watchman’s Quest Ludo - Full Version</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -11,7 +11,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 0; padding: 20px;
+    margin: 0;
+    padding: 20px;
   }
   h1 {
     margin-bottom: 10px;
@@ -52,8 +53,10 @@
   .blue-token { background: blue; }
   .green-token { background: green; }
   .yellow-token { background: yellow; }
-
-  #diceBtn { padding: 12px 25px; font-size: 18px; cursor: pointer; border-radius: 5px; margin-bottom: 10px; }
+  #diceBtn {
+    padding: 12px 25px; font-size: 18px;
+    cursor: pointer; border-radius: 5px; margin-bottom: 10px;
+  }
   #diceResult { font-size: 22px; margin-bottom: 10px; }
   #turnInfo { font-size: 20px; margin-bottom: 20px; }
 </style>
@@ -67,12 +70,12 @@
 <div id="turnInfo">Red's Turn</div>
 
 <script>
-// --- Board Setup ---
 const board = document.getElementById('board');
 const diceBtn = document.getElementById('diceBtn');
 const diceResult = document.getElementById('diceResult');
 const turnInfo = document.getElementById('turnInfo');
 
+// --- Create board cells ---
 const cells = [];
 for(let i=0;i<225;i++){
     const div = document.createElement('div');
@@ -81,13 +84,12 @@ for(let i=0;i<225;i++){
     cells.push(div);
 }
 
-// --- Define home corners ---
-const homes = {
-  red: [0,1,15,16],
-  blue: [14,15,29,30],
-  green: [210,211,225,226],
-  yellow: [224,223,209,208]
-};
+// --- Define token paths for each player (simplified demonstration) ---
+const path = [];
+for(let i=0;i<15;i++) path.push(i); // top row
+for(let i=16;i<225;i+=15) path.push(i); // right column
+for(let i=223;i>208;i--) path.push(i); // bottom row
+for(let i=207;i>15;i-=15) path.push(i); // left column
 
 // --- Tokens ---
 const tokens = {
@@ -97,22 +99,15 @@ const tokens = {
   yellow: [{pos:-1},{pos:-1},{pos:-1},{pos:-1}]
 };
 
-// --- Simple path array (demo) ---
-const path = [];
-for(let i=0;i<15;i++) path.push(i); // top row
-for(let i=16;i<225;i+=15) path.push(i); // right column
-for(let i=223;i>208;i--) path.push(i); // bottom row
-for(let i=207;i>15;i-=15) path.push(i); // left column
-
 let currentPlayer = 'red';
 let selectedToken = 0;
 
-// Draw tokens
+// --- Draw tokens ---
 function drawTokens(){
-    cells.forEach(c=>c.innerHTML=''); // clear
+    cells.forEach(c=>c.innerHTML='');
     ['red','blue','green','yellow'].forEach(color=>{
         tokens[color].forEach(t=>{
-            if(t.pos>=0) {
+            if(t.pos>=0){
                 const tokenDiv = document.createElement('div');
                 tokenDiv.classList.add('token', `${color}-token`);
                 cells[path[t.pos]].appendChild(tokenDiv);
@@ -121,15 +116,15 @@ function drawTokens(){
     });
 }
 
+// --- Dice roll ---
 diceBtn.onclick = ()=>{
     const roll = Math.floor(Math.random()*6)+1;
     diceResult.textContent = `Dice: ${roll}`;
 
-    // Pick first available token
     let token = tokens[currentPlayer][selectedToken];
 
     if(token.pos===-1 && roll===6){
-        token.pos=0; // leave home
+        token.pos = 0; // leave home
     } else if(token.pos>=0){
         token.pos += roll;
         if(token.pos>=path.length) token.pos = path.length-1;
