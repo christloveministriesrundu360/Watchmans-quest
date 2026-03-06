@@ -3,205 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Ludo Board</title>
+    <title>3D Pixar-Style Web Game</title>
     <style>
-        :root {
-            --red: #e74c3c;
-            --blue: #3498db;
-            --yellow: #f1c40f;
-            --green: #2ecc71;
-            --white: #ffffff;
-            --border: #333;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: sans-serif;
-        }
-
-        /* The Board Container */
-        .ludo-board {
-            display: grid;
-            grid-template-columns: repeat(15, 1fr);
-            grid-template-rows: repeat(15, 1fr);
-            width: 90vw;
-            height: 90vw;
-            max-width: 600px;
-            max-height: 600px;
-            background-color: var(--white);
-            border: 5px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        /* Common Cell Styles */
-        .cell {
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        /* The Four Colored Bases (Yards) */
-        .base {
-            grid-column: span 6;
-            grid-row: span 6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .base-inner {
-            background: white;
-            width: 100%;
-            height: 100%;
-            border-radius: 10px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 10px;
-            padding: 15px;
-        }
-
-        .token-slot {
-            background: #eee;
-            border-radius: 50%;
-            border: 2px dashed #999;
-        }
-
-        /* Coloring the Sections */
-        .red { background-color: var(--red); }
-        .green { background-color: var(--green); }
-        .yellow { background-color: var(--yellow); }
-        .blue { background-color: var(--blue); }
-
-        /* The Center Home Area */
-        .home {
-            grid-column: span 3;
-            grid-row: span 3;
-            position: relative;
-            background: white;
-            border: 1px solid var(--border);
-        }
-
-        /* Creating the Triangles in the Center */
-        .home::before {
-            content: "";
+        body { margin: 0; overflow: hidden; background: #111; font-family: sans-serif; }
+        #ui {
             position: absolute;
-            width: 0; height: 0;
-            border-style: solid;
-            border-width: 60px 60px 60px 60px; /* Responsive borders */
-            border-color: var(--red) var(--green) var(--yellow) var(--blue);
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            box-sizing: border-box;
-        }
-
-        /* Specific Path Styling */
-        .safe-spot { background-color: #ddd !important; }
-        .safe-spot::after { content: "★"; color: #777; font-size: 1.2rem; }
-
-        /* UI Controls */
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .dice {
-            width: 60px;
-            height: 60px;
-            background: white;
-            border: 2px solid var(--border);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            background: #333;
+            top: 20px;
+            left: 20px;
             color: white;
-            border: none;
-            border-radius: 5px;
+            pointer-events: none;
         }
+        h1 { margin: 0; font-size: 1.5rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
-    <div class="ludo-board">
-        <div class="base red" style="grid-area: 1 / 1 / 7 / 7;">
-            <div class="base-inner">
-                <div class="token-slot"></div><div class="token-slot"></div>
-                <div class="token-slot"></div><div class="token-slot"></div>
-            </div>
-        </div>
-
-        <div class="base green" style="grid-area: 1 / 10 / 7 / 16;">
-            <div class="base-inner">
-                <div class="token-slot"></div><div class="token-slot"></div>
-                <div class="token-slot"></div><div class="token-slot"></div>
-            </div>
-        </div>
-
-        <div class="base blue" style="grid-area: 10 / 1 / 16 / 7;">
-            <div class="base-inner">
-                <div class="token-slot"></div><div class="token-slot"></div>
-                <div class="token-slot"></div><div class="token-slot"></div>
-            </div>
-        </div>
-
-        <div class="base yellow" style="grid-area: 10 / 10 / 16 / 16;">
-            <div class="base-inner">
-                <div class="token-slot"></div><div class="token-slot"></div>
-                <div class="token-slot"></div><div class="token-slot"></div>
-            </div>
-        </div>
-
-        <div class="home" style="grid-area: 7 / 7 / 10 / 10;"></div>
-
-        <div class="cell green" style="grid-area: 2 / 8 / 7 / 9;"></div>
-        <div class="cell blue" style="grid-area: 10 / 8 / 15 / 9;"></div>
-        <div class="cell red" style="grid-area: 8 / 2 / 9 / 7;"></div>
-        <div class="cell yellow" style="grid-area: 8 / 10 / 9 / 15;"></div>
-
-        <div class="cell safe-spot" style="grid-area: 3 / 7;"></div>
-        <div class="cell safe-spot" style="grid-area: 7 / 13;"></div>
-        <div class="cell safe-spot" style="grid-area: 13 / 9;"></div>
-        <div class="cell safe-spot" style="grid-area: 9 / 3;"></div>
+    <div id="ui">
+        <h1>Pixar-Style 3D Scene</h1>
+        <p>Built with Three.js (No Images Needed)</p>
     </div>
 
-    <div class="controls">
-        <div class="dice" id="dice">?</div>
-        <button onclick="rollDice()">Roll Dice</button>
-    </div>
-
-    <script>
-        function rollDice() {
-            const dice = document.getElementById('dice');
-            dice.style.transform = "rotate(360deg)";
-            dice.style.transition = "0.2s";
-            
-            setTimeout(() => {
-                const result = Math.floor(Math.random() * 6) + 1;
-                dice.innerText = result;
-                dice.style.transform = "rotate(0deg)";
-            }, 200);
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
         }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. THE SCENE (The World)
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb); // Sky Blue
+
+        // 2. THE CAMERA (Your Eyes)
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
+
+        // 3. THE RENDERER (The Engine)
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // Enable shadows for that "Pro" look
+        document.body.appendChild(renderer.domElement);
+
+        // 4. THE LIGHTING (The "Pixar" Secret)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Soft overall light
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 1.2); // Like the Sun
+        mainLight.position.set(5, 10, 7);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+
+        // 5. THE CHARACTER (The "Blob")
+        const geometry = new THREE.SphereGeometry(1, 64, 64);
+        const material = new THREE.MeshStandardMaterial({ 
+            color: 0xff4444,     // Vibrant Red
+            roughness: 0.2,      // Shiny but soft
+            metalness: 0.1,
+        });
+        const character = new THREE.Mesh(geometry, material);
+        character.castShadow = true;
+        character.position.y = 1;
+        scene.add(character);
+
+        // 6. THE GROUND
+        const groundGeo = new THREE.PlaneGeometry(20, 20);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x22aa55 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 7. THE ANIMATION LOOP (The "Squash and Stretch")
+        let clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const t = clock.getElapsedTime();
+            
+            // Bouncing Logic
+            character.position.y = Math.abs(Math.sin(t * 3)) * 2 + 1;
+            
+            // Subtle "Squash" when hitting the ground
+            if (character.position.y < 1.2) {
+                character.scale.set(1.2, 0.8, 1.2);
+            } else {
+                character.scale.set(1, 1, 1);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
     </script>
 </body>
 </html>
