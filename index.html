@@ -3,79 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixar Pro Racer: World Tour</title>
+    <title>Pixar Pro Racer: Grand Tour (Mega Build)</title>
     <style>
-        :root { --primary: #ff4757; --dark: #2f3542; --light: #ffffff; }
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #000; }
+        /* =========================================
+           CSS & UI STYLING
+           ========================================= */
+        :root { --primary: #ff4757; --dark: #1e272e; --text: #f1f2f6; --accent: #ffa502; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; user-select: none; }
         
-        /* UI OVERLAYS */
+        /* Overlays & Menus */
         .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: rgba(0,0,0,0.8); color: white; transition: 0.3s; z-index: 10;
+            background: radial-gradient(circle, rgba(30,39,46,0.9) 0%, rgba(0,0,0,0.95) 100%);
+            color: var(--text); z-index: 100; backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease;
         }
-        .hidden { display: none !important; }
+        .hidden { display: none !important; opacity: 0; }
         
-        .menu-card {
-            background: var(--dark); padding: 40px; border-radius: 20px;
-            text-align: center; border: 4px solid var(--primary); width: 400px;
+        .menu-box {
+            background: rgba(30,39,46,0.8); padding: 50px; border-radius: 15px;
+            border: 2px solid var(--primary); box-shadow: 0 0 30px rgba(255,71,87,0.3);
+            text-align: center; width: 500px; max-width: 90vw;
         }
+        
+        h1 { font-size: 3rem; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; text-shadow: 3px 3px 0px var(--primary); }
+        h2 { color: var(--accent); }
         
         button {
-            background: var(--primary); border: none; padding: 15px 30px;
-            color: white; font-size: 1.2rem; font-weight: bold; border-radius: 10px;
-            cursor: pointer; margin: 10px; width: 80%; transition: 0.2s;
+            background: var(--dark); border: 2px solid var(--text); color: var(--text);
+            padding: 15px 20px; font-size: 1.2rem; font-weight: 800; border-radius: 8px;
+            cursor: pointer; margin: 10px; width: 80%; text-transform: uppercase;
+            transition: all 0.2s;
         }
-        button:hover { transform: scale(1.05); filter: brightness(1.2); }
+        button:hover { background: var(--primary); border-color: var(--primary); transform: scale(1.05); }
+        button.car-btn { font-size: 1rem; padding: 10px; width: 100%; margin: 5px 0; border-color: #555; }
         
-        /* CAR SELECTION UI */
-        .car-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .car-btn { font-size: 0.9rem; padding: 10px; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 
+        /* In-Game HUD (Heads Up Display) */
         #hud {
-            position: absolute; top: 20px; left: 20px; color: white;
-            pointer-events: none; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 50; display: flex; flex-direction: column; justify-content: space-between;
+        }
+        
+        .hud-top { display: flex; justify-content: space-between; padding: 20px; }
+        .hud-panel { background: rgba(0,0,0,0.6); padding: 15px 25px; border-radius: 10px; border-left: 4px solid var(--primary); }
+        .hud-panel h3 { margin: 0 0 5px 0; font-size: 1.5rem; color: var(--accent); }
+        .hud-panel p { margin: 0; font-size: 1.2rem; font-weight: bold; }
+        
+        #wanted-level { color: red; font-size: 1.5rem; letter-spacing: 5px; text-shadow: 0 0 10px red; }
+        
+        .hud-bottom { padding: 20px; display: flex; justify-content: center; align-items: flex-end; }
+        .speedometer {
+            background: rgba(0,0,0,0.8); width: 150px; height: 150px; border-radius: 50%;
+            border: 5px solid #333; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+        }
+        .speed-val { font-size: 3rem; font-weight: 900; color: var(--text); line-height: 1; }
+        .speed-unit { font-size: 1rem; color: #888; }
+        
+        /* Damage Overlay */
+        #damage-flash {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: red; opacity: 0; pointer-events: none; z-index: 90; transition: opacity 0.1s;
         }
     </style>
 </head>
 <body>
 
+    <div id="damage-flash"></div>
+
     <div id="hud" class="hidden">
-        <h2 id="current-zone">VALLEY</h2>
-        <p>Speed: <span id="speed-val">0</span> km/h</p>
-        <p>Distance: <span id="dist-val">0</span>m</p>
+        <div class="hud-top">
+            <div class="hud-panel">
+                <h3 id="zone-display">ZONE: VALLEY</h3>
+                <p>Distance: <span id="dist-display">0</span> m</p>
+                <p>Score: <span id="score-display">0</span></p>
+            </div>
+            <div class="hud-panel" style="text-align: right; border-left: none; border-right: 4px solid red;">
+                <h3>WANTED LEVEL</h3>
+                <div id="wanted-level">★☆☆☆☆</div>
+                <p>Health: <span id="health-display">100</span>%</p>
+            </div>
+        </div>
+        <div class="hud-bottom">
+            <div class="speedometer">
+                <div class="speed-val" id="speed-display">0</div>
+                <div class="speed-unit">KM/H</div>
+            </div>
+        </div>
     </div>
 
     <div id="main-menu" class="overlay">
-        <div class="menu-card">
-            <h1>PIXAR RACER PRO</h1>
-            <button onclick="startGame()">START RACE</button>
-            <button onclick="showScreen('car-select')">GARAGE</button>
-            <button onclick="showScreen('settings')">SETTINGS</button>
+        <div class="menu-box">
+            <h1>PIXAR PRO RACER</h1>
+            <h2>GRAND TOUR EDITION</h2>
+            <button onclick="ui.showScreen('car-select')">ENTER GARAGE</button>
+            <button onclick="game.start()">START ENGINE</button>
         </div>
     </div>
 
     <div id="car-select" class="overlay hidden">
-        <div class="menu-card">
-            <h2>SELECT YOUR SUPERCAR</h2>
-            <div class="car-grid">
-                <button class="car-btn" onclick="selectCar('Ferrari')">Ferrari (Red)</button>
-                <button class="car-btn" onclick="selectCar('Lamborghini')">Lambo (Yellow)</button>
-                <button class="car-btn" onclick="selectCar('BMW')">BMW (Blue)</button>
-                <button class="car-btn" onclick="selectCar('Mercedes')">Mercedes (Silver)</button>
-                <button class="car-btn" onclick="selectCar('McLaren')">McLaren (Orange)</button>
-                <button class="car-btn" onclick="selectCar('Audi')">Audi (White)</button>
-                <button class="car-btn" onclick="selectCar('VW')">VW Bug (Green)</button>
+        <div class="menu-box">
+            <h2 style="margin-top:0;">SELECT YOUR SUPERCAR</h2>
+            <div class="grid-container">
+                <button class="car-btn" onclick="game.setCar('Ferrari')">Ferrari (Red/Fast)</button>
+                <button class="car-btn" onclick="game.setCar('Lamborghini')">Lamborghini (Yellow)</button>
+                <button class="car-btn" onclick="game.setCar('BMW')">BMW (Blue/Drift)</button>
+                <button class="car-btn" onclick="game.setCar('Mercedes')">Mercedes (Silver)</button>
+                <button class="car-btn" onclick="game.setCar('McLaren')">McLaren (Orange)</button>
+                <button class="car-btn" onclick="game.setCar('Audi')">Audi (White)</button>
+                <button class="car-btn" onclick="game.setCar('VW')">VW Bug (Green/Tank)</button>
             </div>
-            <button style="background:#555" onclick="showScreen('main-menu')">BACK</button>
+            <button style="background:var(--dark);" onclick="ui.showScreen('main-menu')">BACK TO MENU</button>
         </div>
     </div>
 
     <div id="pause-menu" class="overlay hidden">
-        <div class="menu-card">
+        <div class="menu-box">
             <h1>PAUSED</h1>
-            <button onclick="togglePause()">CONTINUE</button>
-            <button onclick="location.reload()">RESTART</button>
+            <button onclick="game.togglePause()">RESUME</button>
+            <button onclick="location.reload()">QUIT TO DESKTOP</button>
+        </div>
+    </div>
+
+    <div id="game-over" class="overlay hidden">
+        <div class="menu-box">
+            <h1 style="color:red;">BUSTED / WRECKED</h1>
+            <p>Final Distance: <span id="final-dist"></span>m</p>
+            <button onclick="location.reload()">PLAY AGAIN</button>
         </div>
     </div>
 
@@ -86,162 +143,362 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- GAME STATE ---
-        const state = {
-            running: false,
-            paused: false,
+        /* =========================================
+           1. CONSTANTS & GAME STATE
+           ========================================= */
+        const STATE = {
+            isRunning: false,
+            isPaused: false,
             speed: 0,
+            maxSpeed: 1.5,
+            acceleration: 0.005,
+            handling: 0.15,
             distance: 0,
-            selectedCar: 'Ferrari',
-            zone: 'Valley'
+            score: 0,
+            health: 100,
+            wantedLevel: 0,
+            zone: 'Valley',
+            selectedBrand: 'Ferrari'
         };
 
-        const carData = {
-            'Ferrari': { color: 0xff0000, speed: 0.6, shape: 'low' },
-            'Lamborghini': { color: 0xffff00, speed: 0.7, shape: 'wedge' },
-            'BMW': { color: 0x0000ff, speed: 0.5, shape: 'sedan' },
-            'Mercedes': { color: 0xcccccc, speed: 0.55, shape: 'sedan' },
-            'McLaren': { color: 0xff6600, speed: 0.65, shape: 'low' },
-            'Audi': { color: 0xffffff, speed: 0.5, shape: 'sedan' },
-            'VW': { color: 0x22aa55, speed: 0.4, shape: 'bug' }
+        const INPUT = { up: false, down: false, left: false, right: false };
+
+        const CAR_SPECS = {
+            'Ferrari':     { color: 0xe84118, topSpeed: 1.8, acc: 0.008, handle: 0.18, shape: 'sport', health: 80 },
+            'Lamborghini': { color: 0xfbc531, topSpeed: 1.9, acc: 0.009, handle: 0.15, shape: 'wedge', health: 70 },
+            'BMW':         { color: 0x00a8ff, topSpeed: 1.5, acc: 0.006, handle: 0.20, shape: 'sedan', health: 100 },
+            'Mercedes':    { color: 0x718093, topSpeed: 1.6, acc: 0.006, handle: 0.16, shape: 'sedan', health: 110 },
+            'McLaren':     { color: 0xe15f41, topSpeed: 1.85, acc: 0.01, handle: 0.19, shape: 'sport', health: 70 },
+            'Audi':        { color: 0xf5f6fa, topSpeed: 1.55, acc: 0.006, handle: 0.17, shape: 'sedan', health: 100 },
+            'VW':          { color: 0x44bd32, topSpeed: 1.2, acc: 0.004, handle: 0.22, shape: 'compact', health: 150 }
         };
 
-        // --- THREE.JS SCENE SETUP ---
+        /* =========================================
+           2. CORE ENGINE SETUP (THREE.JS)
+           ========================================= */
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        scene.background = new THREE.Color(0x87ceeb); // Default Day Sky
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
-        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-        sun.position.set(10, 20, 10);
-        sun.castShadow = true;
-        scene.add(sun, new THREE.AmbientLight(0xffffff, 0.5));
-        scene.fog = new THREE.Fog(0x87ceeb, 10, 100);
+        // Lighting System (Day/Night capable)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
 
-        // --- CAR FACTORY ---
-        let playerCar;
-        function buildCar(brand) {
-            if(playerCar) scene.remove(playerCar);
-            const data = carData[brand];
-            const group = new THREE.Group();
-            
-            // Body based on style
-            let bodyGeo;
-            if(data.shape === 'wedge') bodyGeo = new THREE.BoxGeometry(1.1, 0.3, 2.2);
-            else if(data.shape === 'low') bodyGeo = new THREE.BoxGeometry(1, 0.4, 2);
-            else bodyGeo = new THREE.BoxGeometry(1, 0.6, 1.8);
+        const sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        sunLight.position.set(100, 200, 50);
+        sunLight.castShadow = true;
+        sunLight.shadow.camera.top = 100;
+        sunLight.shadow.camera.bottom = -100;
+        sunLight.shadow.camera.left = -100;
+        sunLight.shadow.camera.right = 100;
+        sunLight.shadow.camera.near = 0.1;
+        sunLight.shadow.camera.far = 500;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        scene.add(sunLight);
 
-            const body = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.1 }));
-            body.position.y = 0.4;
-            body.castShadow = true;
-            group.add(body);
+        /* =========================================
+           3. PROCEDURAL CAR BUILDER
+           ========================================= */
+        class CarBuilder {
+            static create(brand, isPolice = false, isTraffic = false) {
+                const spec = CAR_SPECS[brand] || CAR_SPECS['BMW'];
+                const group = new THREE.Group();
+                const color = isPolice ? 0x111111 : (isTraffic ? Math.random() * 0xffffff : spec.color);
+                
+                // Materials
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.5 });
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.1, metalness: 0.8 });
+                const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+                const rimMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9 });
 
-            // Add wheels
-            const wheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            [[-0.6,0.3,0.7],[0.6,0.3,0.7],[-0.6,0.3,-0.7],[0.6,0.3,-0.7]].forEach(pos => {
-                const w = new THREE.Mesh(wheelGeo, wheelMat);
-                w.rotation.z = Math.PI/2;
-                w.position.set(...pos);
-                group.add(w);
-            });
+                // 1. Chassis/Body based on shape profile
+                let bodyGeo, cabinGeo;
+                if (spec.shape === 'wedge') { // Lambo style
+                    bodyGeo = new THREE.BoxGeometry(2, 0.5, 4.5);
+                    cabinGeo = new THREE.BoxGeometry(1.6, 0.4, 2);
+                } else if (spec.shape === 'sport') { // Ferrari/McLaren style
+                    bodyGeo = new THREE.BoxGeometry(1.9, 0.6, 4.2);
+                    cabinGeo = new THREE.BoxGeometry(1.5, 0.5, 1.8);
+                } else if (spec.shape === 'compact') { // VW style
+                    bodyGeo = new THREE.BoxGeometry(1.8, 0.8, 3.5);
+                    cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 1.5);
+                } else { // Sedan (BMW, Mercedes, Audi)
+                    bodyGeo = new THREE.BoxGeometry(1.9, 0.7, 4.4);
+                    cabinGeo = new THREE.BoxGeometry(1.7, 0.6, 2.2);
+                }
 
-            scene.add(group);
-            playerCar = group;
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.position.y = 0.6;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                group.add(body);
+
+                const cabin = new THREE.Mesh(cabinGeo, glassMat);
+                cabin.position.set(0, body.position.y + (spec.shape==='wedge'?0.3:0.5), -0.2);
+                cabin.castShadow = true;
+                group.add(cabin);
+
+                // 2. Headlights & Taillights
+                const headLightGeo = new THREE.BoxGeometry(0.4, 0.2, 0.1);
+                const headLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const hlL = new THREE.Mesh(headLightGeo, headLightMat);
+                hlL.position.set(-0.7, body.position.y, -2.25);
+                const hlR = hlL.clone();
+                hlR.position.x = 0.7;
+                group.add(hlL, hlR);
+
+                const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                const tlL = new THREE.Mesh(headLightGeo, tailLightMat);
+                tlL.position.set(-0.7, body.position.y, 2.25);
+                const tlR = tlL.clone();
+                tlR.position.x = 0.7;
+                group.add(tlL, tlR);
+
+                // 3. Police Sirens
+                if (isPolice) {
+                    const sirenGroup = new THREE.Group();
+                    const sL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.3), new THREE.MeshBasicMaterial({color: 0xff0000}));
+                    sL.position.x = -0.3;
+                    const sR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.3), new THREE.MeshBasicMaterial({color: 0x0000ff}));
+                    sR.position.x = 0.3;
+                    sirenGroup.add(sL, sR);
+                    sirenGroup.position.set(0, cabin.position.y + 0.4, cabin.position.z);
+                    group.add(sirenGroup);
+                    group.userData.isPolice = true;
+                    group.userData.siren = sirenGroup;
+                }
+
+                // 4. Wheels
+                const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+                const rimGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.32, 8);
+                const wheels = [];
+                
+                const wPos = [
+                    [-1, 0.4, -1.5], [1, 0.4, -1.5], // Front
+                    [-1, 0.4, 1.4], [1, 0.4, 1.4]    // Rear
+                ];
+
+                wPos.forEach(pos => {
+                    const wGroup = new THREE.Group();
+                    const tire = new THREE.Mesh(wheelGeo, tireMat);
+                    const rim = new THREE.Mesh(rimGeo, rimMat);
+                    tire.rotation.z = Math.PI / 2;
+                    rim.rotation.z = Math.PI / 2;
+                    wGroup.add(tire, rim);
+                    wGroup.position.set(...pos);
+                    wGroup.castShadow = true;
+                    group.add(wGroup);
+                    wheels.push(wGroup);
+                });
+
+                group.userData.wheels = wheels;
+                group.userData.spec = spec;
+                return group;
+            }
         }
 
-        // --- WORLD GENERATION ---
-        const trackGroup = new THREE.Group();
-        const ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 5000), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        ground.rotation.x = -Math.PI/2;
-        ground.position.z = -2500;
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // Add 200 random obstacles (Trees, Buildings)
-        for(let i=0; i<200; i++) {
-            const h = Math.random()*10 + 2;
-            const obj = new THREE.Mesh(new THREE.BoxGeometry(2,h,2), new THREE.MeshStandardMaterial({ color: 0x44aa44 }));
-            obj.position.set(Math.random()>0.5?7:-7, h/2, -Math.random()*4000);
-            scene.add(obj);
+        /* =========================================
+           4. PARTICLE SYSTEM (Exhaust & Dust)
+           ========================================= */
+        class ParticleSystem {
+            constructor() {
+                this.particles = [];
+                this.geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                this.mat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.8 });
+            }
+            spawn(x, y, z, color = null) {
+                const p = new THREE.Mesh(this.geo, color ? new THREE.MeshBasicMaterial({color}) : this.mat);
+                p.position.set(x + (Math.random()-0.5)*0.5, y, z + (Math.random()-0.5)*0.5);
+                p.userData = { 
+                    life: 1.0, 
+                    vy: Math.random() * 0.05 + 0.02,
+                    vx: (Math.random() - 0.5) * 0.05
+                };
+                scene.add(p);
+                this.particles.push(p);
+            }
+            update() {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.userData.life -= 0.02;
+                    p.position.y += p.userData.vy;
+                    p.position.x += p.userData.vx;
+                    p.scale.setScalar(p.userData.life);
+                    p.material.opacity = p.userData.life;
+                    
+                    if (p.userData.life <= 0) {
+                        scene.remove(p);
+                        this.particles.splice(i, 1);
+                    }
+                }
+            }
         }
+        const particles = new ParticleSystem();
 
-        // --- CONTROLS ---
-        const keys = {};
-        window.addEventListener('keydown', e => {
-            keys[e.code] = true;
-            if(e.code === 'Escape') togglePause();
-        });
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        /* =========================================
+           5. PROCEDURAL WORLD GENERATOR
+           ========================================= */
+        class WorldManager {
+            constructor() {
+                this.roadWidth = 24;
+                this.chunks = [];
+                this.decorations = [];
+                this.chunkLength = 500;
+                
+                // Base Road Matrix
+                const roadGeo = new THREE.PlaneGeometry(this.roadWidth, 10000);
+                const roadMat = new THREE.MeshStandardMaterial({ color: 0x2d3436, roughness: 0.8 });
+                this.road = new THREE.Mesh(roadGeo, roadMat);
+                this.road.rotation.x = -Math.PI / 2;
+                this.road.receiveShadow = true;
+                scene.add(this.road);
 
-        // --- CORE LOOP ---
-        function update() {
-            if(!state.running || state.paused) return;
+                // Ground Plane
+                const groundGeo = new THREE.PlaneGeometry(2000, 10000);
+                this.groundMat = new THREE.MeshStandardMaterial({ color: 0x55aa55 });
+                this.ground = new THREE.Mesh(groundGeo, this.groundMat);
+                this.ground.rotation.x = -Math.PI / 2;
+                this.ground.position.y = -0.1;
+                this.ground.receiveShadow = true;
+                scene.add(this.ground);
+            }
 
-            // Physics
-            if(keys['ArrowUp']) state.speed += 0.005;
-            else state.speed *= 0.98; // Drag
+            updateZone(distance) {
+                if (distance < 3000) {
+                    STATE.zone = 'Lush Valley';
+                    this.groundMat.color.setHex(0x55aa55); // Green
+                    scene.fog.color.setHex(0x87ceeb); scene.background.setHex(0x87ceeb); // Day
+                    ambientLight.intensity = 0.6; sunLight.intensity = 1.5;
+                } else if (distance < 7000) {
+                    STATE.zone = 'Dusty Canyon';
+                    this.groundMat.color.setHex(0xd35400); // Orange/Brown
+                    scene.fog.color.setHex(0xe67e22); scene.background.setHex(0xe67e22); // Sunset
+                    ambientLight.intensity = 0.4; sunLight.intensity = 1.0;
+                } else {
+                    STATE.zone = 'Neon City';
+                    this.groundMat.color.setHex(0x111111); // Dark Asphalt
+                    scene.fog.color.setHex(0x0a0a2a); scene.background.setHex(0x0a0a2a); // Night
+                    ambientLight.intensity = 0.1; sunLight.intensity = 0.2; // Dark
+                }
+                document.getElementById('zone-display').innerText = `ZONE: ${STATE.zone.toUpperCase()}`;
+            }
 
-            if(keys['ArrowLeft'] && playerCar.position.x > -4) playerCar.position.x -= 0.1;
-            if(keys['ArrowRight'] && playerCar.position.x < 4) playerCar.position.x += 0.1;
+            spawnScenery(playerZ) {
+                // Procedurally spawn trees/buildings ahead of the player
+                if (Math.random() > 0.8) {
+                    const isRight = Math.random() > 0.5;
+                    const xPos = isRight ? (this.roadWidth/2 + 5 + Math.random()*40) : -(this.roadWidth/2 + 5 + Math.random()*40);
+                    const zPos = playerZ - 800 - Math.random() * 200;
+                    
+                    let mesh;
+                    if (STATE.zone === 'Lush Valley') {
+                        // Tree
+                        mesh = new THREE.Mesh(new THREE.ConeGeometry(3, 10, 8), new THREE.MeshStandardMaterial({color: 0x27ae60}));
+                        mesh.position.set(xPos, 5, zPos);
+                    } else if (STATE.zone === 'Dusty Canyon') {
+                        // Rock Formation
+                        mesh = new THREE.Mesh(new THREE.DodecahedronGeometry(5 + Math.random()*5), new THREE.MeshStandardMaterial({color: 0xc0392b}));
+                        mesh.position.set(xPos, 3, zPos);
+                    } else {
+                        // Skyscraper
+                        const h = 20 + Math.random()*50;
+                        mesh = new THREE.Mesh(new THREE.BoxGeometry(8, h, 8), new THREE.MeshStandardMaterial({color: 0x222222, emissive: 0x111133}));
+                        mesh.position.set(xPos, h/2, zPos);
+                    }
+                    
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    scene.add(mesh);
+                    this.decorations.push(mesh);
+                }
 
-            state.distance += state.speed;
-            playerCar.position.z -= state.speed;
-
-            // Camera
-            camera.position.lerp(new THREE.Vector3(playerCar.position.x, 3, playerCar.position.z + 6), 0.1);
-            camera.lookAt(playerCar.position.x, 1, playerCar.position.z - 5);
-
-            // UI
-            document.getElementById('speed-val').innerText = Math.floor(state.speed * 400);
-            document.getElementById('dist-val').innerText = Math.floor(state.distance);
-
-            // Zone Logic
-            if(state.distance > 1000) changeZone('Canyon', 0xffaa66);
-            if(state.distance > 2500) changeZone('Night City', 0x111122);
+                // Cleanup old scenery behind player
+                for (let i = this.decorations.length - 1; i >= 0; i--) {
+                    if (this.decorations[i].position.z > playerZ + 200) {
+                        scene.remove(this.decorations[i]);
+                        this.decorations.splice(i, 1);
+                    }
+                }
+            }
         }
+        const world = new WorldManager();
 
-        function changeZone(name, color) {
-            state.zone = name;
-            document.getElementById('current-zone').innerText = name;
-            scene.fog.color.set(color);
-            renderer.setClearColor(color);
-        }
+        /* =========================================
+           6. AI TRAFFIC & POLICE MANAGER
+           ========================================= */
+        class TrafficManager {
+            constructor() {
+                this.vehicles = [];
+                this.lanes = [-8, -3, 3, 8]; // 4 Lane highway
+            }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            update();
-            renderer.render(scene, camera);
-        }
+            spawn(playerZ) {
+                // Civilian Traffic
+                if (Math.random() > 0.95 && this.vehicles.length < 15) {
+                    const brand = Object.keys(CAR_SPECS)[Math.floor(Math.random()*7)];
+                    const car = CarBuilder.create(brand, false, true);
+                    const lane = this.lanes[Math.floor(Math.random() * this.lanes.length)];
+                    car.position.set(lane, 0, playerZ - 600 - Math.random() * 200);
+                    car.userData.speed = 0.5 + Math.random() * 0.4; // AI speed
+                    scene.add(car);
+                    this.vehicles.push(car);
+                }
 
-        // --- UI FUNCTIONS (Global) ---
-        window.showScreen = (id) => {
-            document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-        };
+                // Police Chase Spawner
+                if (STATE.wantedLevel > 0 && Math.random() > 0.98 && this.vehicles.length < 20) {
+                    const cop = CarBuilder.create('BMW', true, false);
+                    cop.position.set(player.mesh.position.x + (Math.random()-0.5)*10, 0, playerZ + 100); // Spawn behind
+                    cop.userData.speed = STATE.speed + 0.1; // Faster than player
+                    cop.userData.isCop = true;
+                    scene.add(cop);
+                    this.vehicles.push(cop);
+                }
+            }
 
-        window.selectCar = (brand) => {
-            state.selectedCar = brand;
-            buildCar(brand);
-            showScreen('main-menu');
-        };
+            update(playerMesh) {
+                for (let i = this.vehicles.length - 1; i >= 0; i--) {
+                    const v = this.vehicles[i];
+                    
+                    if (v.userData.isCop) {
+                        // Cop AI: Chase Player
+                        v.position.z -= v.userData.speed;
+                        // Steer towards player
+                        if (v.position.x < playerMesh.position.x - 0.5) v.position.x += 0.1;
+                        if (v.position.x > playerMesh.position.x + 0.5) v.position.x -= 0.1;
+                        
+                        // Blink Sirens
+                        if (Date.now() % 400 < 200) {
+                            v.userData.siren.children[0].material.color.setHex(0xff0000);
+                            v.userData.siren.children[1].material.color.setHex(0x000000);
+                        } else {
+                            v.userData.siren.children[0].material.color.setHex(0x000000);
+                            v.userData.siren.children[1].material.color.setHex(0x0000ff);
+                        }
+                    } else {
+                        // Civilian AI: Drive straight
+                        v.position.z -= v.userData.speed;
+                    }
 
-        window.startGame = () => {
-            state.running = true;
-            document.getElementById('hud').classList.remove('hidden');
-            showScreen('none');
-        };
+                    // Spin AI wheels
+                    v.userData.wheels.forEach(w => w.rotation.x -= v.userData.speed / 0.4);
 
-        window.togglePause = () => {
-            if(!state.running) return;
-            state.paused = !state.paused;
-            showScreen(state.paused ? 'pause-menu' : 'none');
-        };
-
-        buildCar('Ferrari');
-        animate();
-    </script>
-</body>
-</html>
+                    // Collision Detection (AABB simple box check)
+                    const dist = Math.hypot(playerMesh.position.x - v.position.x, playerMesh.position.z - v.position.z);
+                    if (dist < 3.5) { // Crash radius
+                        game.takeDamage();
+                        // Knockback
+                        STATE.speed *= 0.3; 
+                        v.position.x += (Math.random() > 0.5 ? 2 : -2);
+                        v.userData.speed = 0; // AI car stops
+                        
+                        // Create explosion particles
+                        for(let p=0; p<20; p++) particles.spawn(playerMesh.position.x, 2, playerMesh.position.z,
